@@ -124,11 +124,13 @@ client.on('messageCreate', async (message) => {
 
     // Skip to next song
     if (command === 'next') {
+       const filePath = musicQueue.shift();
+       const resource = createAudioResource(fs.createReadStream(filePath));
         if (musicQueue.length === 0) {
             return message.reply('The queue is empty. Add more songs to play next.');
         }
         playNext();
-        message.reply(`Playing the next song in the queue. \n Now playing: ${fileName}.`);
+        message.reply(`Playing the next song in the queue. Now playing: ${path.basename(filePath)}.`);
     }
 });
 
