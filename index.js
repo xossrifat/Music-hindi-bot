@@ -337,11 +337,10 @@ client.once('ready', async () => {
     currentConnection.subscribe(currentPlayer);
 
     
-    const textChannelId = process.env.TEXT_CHANNEL_ID;
-    const guild = client.guilds.cache.get(process.env.GUILD_ID);
+   
     if (guild) {
         // Fetch the specific text channel by ID
-        const textChannel = guild.channels.cache.get(textChannelId);
+     const textChannel = guild.channels.cache.get(textChannelId);
      if (textChannel) {
         controlMessage = await textChannel.send({
             content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
