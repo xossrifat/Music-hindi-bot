@@ -319,7 +319,7 @@ client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
     const guildId = process.env.GUILD_ID;
     const channelId = process.env.VOICE_CHANNEL_ID;
-
+    const textChannelId = process.env.TEXT_CHANNEL_ID;
     const guild = client.guilds.cache.get(guildId);
     if (!guild) {
         console.error('Guild not found.');
