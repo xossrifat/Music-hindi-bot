@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const { VoiceConnectionStatus, createsAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, joinVoiceChannel } = require('@discordjs/voice');
+const { VoiceConnectionStatus, entersState, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
