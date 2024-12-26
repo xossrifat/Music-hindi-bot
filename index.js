@@ -54,13 +54,13 @@ const playNext = () => {
 
 // Command handler for bot commands
 client.on('messageCreate', async (message) => {
-    if (!message.content.startsWith('!') || message.author.bot) return;
+    if (!message.content.startsWith('$') || message.author.bot) return;
 
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
     // Play specific song or resume if no song is specified
-    if (command === 'play music') {
+    if (command === 'play') {
         const fileName = args.join(' '); // Get the file name or specific song
         const musicFolderPath = path.join(__dirname, 'Music');
         const filePath = path.join(musicFolderPath, fileName);
@@ -103,7 +103,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // Pause playback
-    if (command === 'pause music') {
+    if (command === 'pause') {
         if (!currentPlayer || isPaused) {
             return message.reply('No music is currently playing or it is already paused.');
         }
@@ -113,7 +113,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // Resume playback
-    if (command === 'resume music') {
+    if (command === 'resume') {
         if (!currentPlayer || !isPaused) {
             return message.reply('No music is currently paused.');
         }
@@ -123,7 +123,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // Skip to next song
-    if (command === 'next music') {
+    if (command === 'next') {
         if (musicQueue.length === 0) {
             return message.reply('The queue is empty. Add more songs to play next.');
         }
