@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, MessageActionRow, MessageButton } = require('discord.js');
 const { VoiceConnectionStatus, entersState, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
 const path = require('path');
@@ -48,7 +48,12 @@ const playNext = () => {
     currentPlayer.on('error', (error) => {
         console.error('Error playing audio:', error);
     });
-    console.log(`Now playing: ${path.basename(filePath)}`);
+    
+    // Send "Now playing" message
+    const channel = currentConnection.channel;
+    if (channel) {
+        channel.send(`Now playing: ${path.basename(filePath)}`);
+    }
 };
 
 // Command handler for bot commands
@@ -130,6 +135,40 @@ client.on('messageCreate', async (message) => {
         }
         playNext();
         message.reply(`Playing the next song in the queue. Now playing: ${path.basename(filePath)}.`);
+    }
+
+    // Show the number of songs and their names in the music folder
+    if (command === 'list') {
+        const musicFolderPath = path.join(__dirname, 'Music');
+        const musicFiles = fs.readdirSync(musicFolderPath).filter(file => file.endsWith('.mp3'));
+
+        if (musicFiles.length === 0) {
+            return message.reply('No songs found in the music folder.');
+        }
+
+        let songList = musicFiles.map((file, index) => `${index + 1}. ${file}`).join('\n');
+        message.reply(`There are ${musicFiles.length} songs in the music folder:\n${songList}`);
+    }
+
+    // Help command with buttons
+    if (command === 'help') {
+        const helpMessage = `**Available Commands:**
+        - \`$play <song>\` - Play a specific song.
+        - \`$pause\` - Pause the current song.
+        - \`$resume\` - Resume the paused song.
+        - \`$next\` - Skip to the next song.
+        - \`$list\` - List all songs in the music folder.
+        - \`$help\` - Show this help message.`;
+
+        const row = new MessageActionRow()
+            .addComponents(
+                new MessageButton()
+                    .setCustomId('help')
+                    .setLabel('Show Commands')
+                    .setStyle('PRIMARY')
+            );
+
+        await message.reply({ content: helpMessage, components: [row] });
     }
 });
 
