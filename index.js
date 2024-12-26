@@ -35,17 +35,19 @@ const loadMusicQueue = () => {
 const playNext = () => {
     if (!currentConnection || musicQueue.length === 0) return;
 
-    const filePath = musicQueue.shift();
+    const filePath = musicQueue[currentSongIndex];
     const resource = createAudioResource(fs.createReadStream(filePath));
 
     currentPlayer.play(resource);
 
     currentPlayer.on(AudioPlayerStatus.Idle, () => {
-        if (musicQueue.length > 0) {
-            playNext();
+        if (isLooping) {
+            playNext(); // Loop the current song
+        } else if (isShuffling) {
+            shuffleQueue(); // Shuffle and play the next song
         } else {
-            console.log('Queue is empty, stopping playback.');
-            currentConnection.destroy();  // Disconnect from the channel when queue is empty
+            currentSongIndex = (currentSongIndex + 1) % musicQueue.length;
+            playNext();
         }
     });
 
@@ -57,15 +59,24 @@ const playNext = () => {
     const textChannelId = process.env.TEXT_CHANNEL_ID;
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
     
-    if (guild) {
-        // Fetch the specific text channel by ID
-        const textChannel = guild.channels.cache.get(textChannelId);
-        
-        if (textChannel) {
-            textChannel.send(`Now playing: ${path.basename(filePath)}`);
-        } else {
-            console.error("Text channel not found.");
-        }
+    // Send the now playing message to the specific channel
+    const channel = guild.channels.cache.get(textChannelId);
+    if (!channel) {
+        channel.send(`Now playing: ${path.basename(filePath)}`);
+    }
+
+    // Delete the previous control message if it exists
+    if (controlMessage) {
+        controlMessage.delete();
+    }
+
+    // Send a new control message
+    const channel = guild.channels.cache.get(textChannelId);
+    if (!channel) {
+        controlMessage = channel.send({
+            content: `Now playing: ${path.basename(filePath)}`,
+            components: [createMusicButtons()],
+        });
     }
 };
 
