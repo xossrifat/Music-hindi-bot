@@ -28,7 +28,7 @@ const loadMusicQueue = () => {
 };
 
 // Function to play the next song in the queue
-const playNext = (message) => {
+const playNext = () => {
     if (!currentConnection || musicQueue.length === 0) return;
 
     const filePath = musicQueue.shift();
@@ -48,7 +48,6 @@ const playNext = (message) => {
     currentPlayer.on('error', (error) => {
         console.error('Error playing audio:', error);
     });
-     message.reply(`Now playing: ${path.basename(filePath)}.`);
     console.log(`Now playing: ${path.basename(filePath)}`);
 };
 
