@@ -66,7 +66,7 @@ const playNext = () => {
         const textChannel = guild.channels.cache.get(textChannelId);
            const textChannel1 = guild.channels.cache.get(textChannelId);
      if (textChannel1) {
-        const controlMessage = await textChannel.send({
+       controlMessage = await textChannel.send({
             content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
             components: [createMusicButtons()],
         });
