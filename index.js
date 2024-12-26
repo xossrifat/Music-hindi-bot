@@ -60,7 +60,7 @@ client.on('messageCreate', async (message) => {
     const command = args.shift().toLowerCase();
 
     // Play specific song or resume if no song is specified
-    if (command === 'play') {
+    if (command === 'play music') {
         const fileName = args.join(' '); // Get the file name or specific song
         const musicFolderPath = path.join(__dirname, 'Music');
         const filePath = path.join(musicFolderPath, fileName);
@@ -103,7 +103,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // Pause playback
-    if (command === 'pause') {
+    if (command === 'pause music') {
         if (!currentPlayer || isPaused) {
             return message.reply('No music is currently playing or it is already paused.');
         }
@@ -113,7 +113,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // Resume playback
-    if (command === 'resume') {
+    if (command === 'resume music') {
         if (!currentPlayer || !isPaused) {
             return message.reply('No music is currently paused.');
         }
@@ -123,12 +123,12 @@ client.on('messageCreate', async (message) => {
     }
 
     // Skip to next song
-    if (command === 'next') {
+    if (command === 'next music') {
         if (musicQueue.length === 0) {
             return message.reply('The queue is empty. Add more songs to play next.');
         }
         playNext();
-        message.reply('Playing the next song in the queue.');
+        message.reply(`Playing the next song in the queue. \n Now playing: ${fileName}.`);
     }
 });
 
