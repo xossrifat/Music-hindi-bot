@@ -65,6 +65,20 @@ const playNext = () => {
     }
 };
 
+// Function to split the list of songs into chunks of 2000 characters or fewer
+const splitMessage = (message, maxLength = 2000) => {
+    const messageChunks = [];
+    while (message.length > maxLength) {
+        let chunk = message.slice(0, maxLength);
+        let lastIndex = chunk.lastIndexOf("\n"); // Split at the last newline to avoid cutting a song name
+        if (lastIndex === -1) lastIndex = chunk.length; // If no newline, cut at max length
+        messageChunks.push(chunk.slice(0, lastIndex));
+        message = message.slice(lastIndex);
+    }
+    messageChunks.push(message); // Add the remaining part
+    return messageChunks;
+};
+
 // Command handler for bot commands
 client.on('messageCreate', async (message) => {
     if (!message.content.startsWith('$') || message.author.bot) return;
@@ -162,16 +176,23 @@ client.on('messageCreate', async (message) => {
     }
 
     // Show the number of songs and their names in the music folder
+    // List songs in the Music folder
     if (command === 'list') {
         const musicFolderPath = path.join(__dirname, 'Music');
         const musicFiles = fs.readdirSync(musicFolderPath).filter(file => file.endsWith('.mp3'));
+        
+        let songList = '';
+        musicFiles.forEach((file, index) => {
+            songList += `${index + 1}. ${file}\n`;
+        });
 
-        if (musicFiles.length === 0) {
-            return textChannel.send('No songs found in the music folder.');
+        // Split the message if it's too long
+        const chunks = splitMessage(songList);
+        
+        // Send each chunk as a separate message
+        for (let chunk of chunks) {
+            await message.channel.send(chunk);
         }
-
-        let songList = musicFiles.map((file, index) => `${index + 1}. ${file}`).join('\n');
-        textChannel.send(`There are ${musicFiles.length} songs in the music folder:\n${songList}`);
     }
 
     // Help command
