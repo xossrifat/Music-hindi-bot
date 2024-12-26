@@ -59,7 +59,7 @@ const playNext = () => {
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
  // Delete the previous control message if it exists
     if (controlMessage) {
-        controlMessage.delete();
+       const controlMessage.delete();
     }
     if (guild) {
         // Fetch the specific text channel by ID
@@ -67,12 +67,12 @@ const playNext = () => {
            const textChannel1 = guild.channels.cache.get(textChannelId);
      if (textChannel1) {
       const controlMessage = textChannel.send({
-            content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
+            content: `Now playing: ${path.basename(filePath)}`,
             components: [createMusicButtons()],
         });
      }
         if (textChannel) {
-            textChannel.send(`Now playing: ${path.basename(filePath)}`);
+            textChannel.send(``);
         } else {
             console.error("Text channel not found.");
         }
