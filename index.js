@@ -48,7 +48,7 @@ const playNext = () => {
     currentPlayer.on('error', (error) => {
         console.error('Error playing audio:', error);
     });
-
+    message.reply(`Now playing: ${path.basename(filePath)}.`);
     console.log(`Now playing: ${path.basename(filePath)}`);
 };
 
