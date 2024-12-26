@@ -1,5 +1,5 @@
-const { Client, GatewayIntentBits, MessageActionRow, MessageButton } = require('discord.js');
-const { VoiceConnectionStatus, entersState, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, joinVoiceChannel } = require('@discordjs/voice');
+const { Client, GatewayIntentBits } = require('discord.js');
+const { VoiceConnectionStatus, createsAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -48,11 +48,20 @@ const playNext = () => {
     currentPlayer.on('error', (error) => {
         console.error('Error playing audio:', error);
     });
+
+    // Get the text channel ID from the environment variable
+    const textChannelId = process.env.TEXT_CHANNEL_ID;
+    const guild = client.guilds.cache.get(process.env.GUILD_ID);
     
-    // Send "Now playing" message
-    const channel = currentConnection.channel;
-    if (channel) {
-        channel.send(`Now playing: ${path.basename(filePath)}`);
+    if (guild) {
+        // Fetch the specific text channel by ID
+        const textChannel = guild.channels.cache.get(textChannelId);
+        
+        if (textChannel) {
+            textChannel.send(`Now playing: ${path.basename(filePath)}`);
+        } else {
+            console.error("Text channel not found.");
+        }
     }
 };
 
@@ -62,6 +71,21 @@ client.on('messageCreate', async (message) => {
 
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
+
+    // Get the text channel ID from the environment variable
+    const textChannelId = process.env.TEXT_CHANNEL_ID;
+    const guild = client.guilds.cache.get(process.env.GUILD_ID);
+    
+    if (!guild) {
+        return message.reply('Guild not found.');
+    }
+
+    // Fetch the specific text channel by ID
+    const textChannel = guild.channels.cache.get(textChannelId);
+    
+    if (!textChannel) {
+        return message.reply('Text channel not found.');
+    }
 
     // Play specific song or resume if no song is specified
     if (command === 'play') {
@@ -91,39 +115,39 @@ client.on('messageCreate', async (message) => {
 
                 playNext();
             }
-            message.reply(`Now playing: ${fileName}`);
+            textChannel.send(`Now playing: ${fileName}`);
         } else if (!fileName) {
-            if (!currentPlayer || !currentConnection) return message.reply('No music is currently playing.');
+            if (!currentPlayer || !currentConnection) return textChannel.send('No music is currently playing.');
             if (isPaused) {
                 currentPlayer.unpause();
                 isPaused = false;
-                message.reply('Playback resumed.');
+                textChannel.send('Playback resumed.');
             } else {
-                message.reply('Playback is already running.');
+                textChannel.send('Playback is already running.');
             }
         } else {
-            message.reply(`The file "${fileName}" does not exist in the music folder.`);
+            textChannel.send(`The file "${fileName}" does not exist in the music folder.`);
         }
     }
 
     // Pause playback
     if (command === 'pause') {
         if (!currentPlayer || isPaused) {
-            return message.reply('No music is currently playing or it is already paused.');
+            return textChannel.send('No music is currently playing or it is already paused.');
         }
         currentPlayer.pause();
         isPaused = true;
-        message.reply('Playback paused.');
+        textChannel.send('Playback paused.');
     }
 
     // Resume playback
     if (command === 'resume') {
         if (!currentPlayer || !isPaused) {
-            return message.reply('No music is currently paused.');
+            return textChannel.send('No music is currently paused.');
         }
         currentPlayer.unpause();
         isPaused = false;
-        message.reply('Playback resumed.');
+        textChannel.send('Playback resumed.');
     }
 
     // Skip to next song
@@ -131,10 +155,10 @@ client.on('messageCreate', async (message) => {
        const filePath = musicQueue.shift();
        const resource = createAudioResource(fs.createReadStream(filePath));
         if (musicQueue.length === 0) {
-            return message.reply('The queue is empty. Add more songs to play next.');
+            return textChannel.send('The queue is empty. Add more songs to play next.');
         }
         playNext();
-        message.reply(`Playing the next song in the queue. Now playing: ${path.basename(filePath)}.`);
+        textChannel.send(`Playing the next song in the queue. Now playing: ${path.basename(filePath)}.`);
     }
 
     // Show the number of songs and their names in the music folder
@@ -143,14 +167,14 @@ client.on('messageCreate', async (message) => {
         const musicFiles = fs.readdirSync(musicFolderPath).filter(file => file.endsWith('.mp3'));
 
         if (musicFiles.length === 0) {
-            return message.reply('No songs found in the music folder.');
+            return textChannel.send('No songs found in the music folder.');
         }
 
         let songList = musicFiles.map((file, index) => `${index + 1}. ${file}`).join('\n');
-        message.reply(`There are ${musicFiles.length} songs in the music folder:\n${songList}`);
+        textChannel.send(`There are ${musicFiles.length} songs in the music folder:\n${songList}`);
     }
 
-    // Help command with buttons
+    // Help command
     if (command === 'help') {
         const helpMessage = `**Available Commands:**
         - \`$play <song>\` - Play a specific song.
@@ -160,15 +184,7 @@ client.on('messageCreate', async (message) => {
         - \`$list\` - List all songs in the music folder.
         - \`$help\` - Show this help message.`;
 
-        const row = new MessageActionRow()
-            .addComponents(
-                new MessageButton()
-                    .setCustomId('help')
-                    .setLabel('Show Commands')
-                    .setStyle('PRIMARY')
-            );
-
-        await message.reply({ content: helpMessage, components: [row] });
+        textChannel.send(helpMessage);
     }
 });
 
