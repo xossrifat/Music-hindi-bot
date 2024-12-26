@@ -1,3 +1,4 @@
+
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { VoiceConnectionStatus, entersState, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
@@ -62,10 +63,7 @@ const playNext = () => {
         const textChannel = guild.channels.cache.get(textChannelId);
         
         if (textChannel) {
-            textChannel.send({
-            content: `Now playing: ${path.basename(filePath)}`,
-            components: [createMusicButtons()],
-          });
+            textChannel.send(`Now playing: ${path.basename(filePath)}`);
         } else {
             console.error("Text channel not found.");
         }
