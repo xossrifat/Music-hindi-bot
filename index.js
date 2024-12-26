@@ -18,7 +18,10 @@ const client = new Client({
 let musicQueue = [];
 let currentPlayer = null;
 let currentConnection = null;
+let currentSongIndex = 0; // Track the current song index
 let isPaused = false;
+let isLooping = false;
+let isShuffling = false;
 
 // Helper function to load music files from the music folder
 const loadMusicQueue = () => {
