@@ -64,7 +64,13 @@ const playNext = () => {
     if (guild) {
         // Fetch the specific text channel by ID
         const textChannel = guild.channels.cache.get(textChannelId);
-        
+           const textChannel1 = guild.channels.cache.get(textChannelId);
+     if (textChannel1) {
+        const controlMessage = await textChannel.send({
+            content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
+            components: [createMusicButtons()],
+        });
+     }
         if (textChannel) {
             textChannel.send(`Now playing: ${path.basename(filePath)}`);
         } else {
@@ -338,18 +344,8 @@ client.once('ready', async () => {
 
     
    
-    if (guild) {
-        // Fetch the specific text channel by ID
-     const textChannel = guild.channels.cache.get(textChannelId);
-     if (textChannel) {
-        controlMessage = await textChannel.send({
-            content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
-            components: [createMusicButtons()],
-        });
-     }else{
-         
-        }
-    }
+
+      
     // Load initial queue and start playback
     musicQueue = loadMusicQueue();
     playNext();
