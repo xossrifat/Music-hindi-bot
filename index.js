@@ -57,7 +57,10 @@ const playNext = () => {
     // Get the text channel ID from the environment variable
     const textChannelId = process.env.TEXT_CHANNEL_ID;
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
-    
+ // Delete the previous control message if it exists
+    if (controlMessage) {
+        controlMessage.delete();
+    }
     if (guild) {
         // Fetch the specific text channel by ID
         const textChannel = guild.channels.cache.get(textChannelId);
@@ -333,6 +336,21 @@ client.once('ready', async () => {
     currentPlayer = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play } });
     currentConnection.subscribe(currentPlayer);
 
+    
+    const textChannelId = process.env.TEXT_CHANNEL_ID;
+    const guild = client.guilds.cache.get(process.env.GUILD_ID);
+    if (guild) {
+        // Fetch the specific text channel by ID
+        const textChannel = guild.channels.cache.get(textChannelId);
+     if (textChannel) {
+        controlMessage = await textChannel.send({
+            content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
+            components: [createMusicButtons()],
+        });
+     }else{
+         
+        }
+    }
     // Load initial queue and start playback
     musicQueue = loadMusicQueue();
     playNext();
