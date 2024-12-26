@@ -35,19 +35,17 @@ const loadMusicQueue = () => {
 const playNext = () => {
     if (!currentConnection || musicQueue.length === 0) return;
 
-    const filePath = musicQueue[currentSongIndex];
+    const filePath = musicQueue.shift();
     const resource = createAudioResource(fs.createReadStream(filePath));
 
     currentPlayer.play(resource);
 
     currentPlayer.on(AudioPlayerStatus.Idle, () => {
-        if (isLooping) {
-            playNext(); // Loop the current song
-        } else if (isShuffling) {
-            shuffleQueue(); // Shuffle and play the next song
-        } else {
-            currentSongIndex = (currentSongIndex + 1) % musicQueue.length;
+        if (musicQueue.length > 0) {
             playNext();
+        } else {
+            console.log('Queue is empty, stopping playback.');
+            currentConnection.destroy();  // Disconnect from the channel when queue is empty
         }
     });
 
@@ -59,24 +57,18 @@ const playNext = () => {
     const textChannelId = process.env.TEXT_CHANNEL_ID;
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
     
-    // Send the now playing message to the specific channel
-    const channel = guild.channels.cache.get(textChannelId);
-    if (!channel) {
-        channel.send(`Now playing: ${path.basename(filePath)}`);
-    }
-
-    // Delete the previous control message if it exists
-    if (controlMessage) {
-        controlMessage.delete();
-    }
-
-    // Send a new control message
-    const channel = guild.channels.cache.get(textChannelId);
-    if (!channel) {
-        controlMessage = channel.send({
+    if (guild) {
+        // Fetch the specific text channel by ID
+        const textChannel = guild.channels.cache.get(textChannelId);
+        
+        if (textChannel) {
+            textChannel.send({
             content: `Now playing: ${path.basename(filePath)}`,
             components: [createMusicButtons()],
-        });
+          });
+        } else {
+            console.error("Text channel not found.");
+        }
     }
 };
 
