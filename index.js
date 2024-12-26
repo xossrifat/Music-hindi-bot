@@ -22,6 +22,7 @@ let currentSongIndex = 0; // Track the current song index
 let isPaused = false;
 let isLooping = false;
 let isShuffling = false;
+let controlMessage = null;
 
 // Helper function to load music files from the music folder
 const loadMusicQueue = () => {
@@ -94,29 +95,30 @@ const shuffleQueue = () => {
 };
 
 // Create the message action row with buttons
+// Create the message action row with buttons
 const createMusicButtons = () => {
-    return new MessageActionRow()
+    return new ActionRowBuilder()
         .addComponents(
-            new MessageButton()
+            new ButtonBuilder()
                 .setCustomId('previous')
                 .setLabel('Previous')
-                .setStyle('PRIMARY'),
-            new MessageButton()
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
                 .setCustomId('next')
                 .setLabel('Next')
-                .setStyle('PRIMARY'),
-            new MessageButton()
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
                 .setCustomId('pause')
                 .setLabel('Pause/Resume')
-                .setStyle('SECONDARY'),
-            new MessageButton()
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
                 .setCustomId('shuffle')
                 .setLabel('Shuffle')
-                .setStyle('SECONDARY'),
-            new MessageButton()
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
                 .setCustomId('loop')
                 .setLabel('Loop')
-                .setStyle('SECONDARY')
+                .setStyle(ButtonStyle.Secondary)
         );
 };
 
@@ -202,7 +204,7 @@ client.on('messageCreate', async (message) => {
  // Show the player controls
     if (command === 'controls') {
         const controlMessage = await message.reply({
-            content: 'Use the buttons below to control the music!',
+            content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
             components: [createMusicButtons()],
         });
     }
@@ -261,7 +263,6 @@ client.on('messageCreate', async (message) => {
         textChannel.send(helpMessage);
     }
 });
-
 
 
 
