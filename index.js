@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, MessageActionRow, MessageButton } = require('discord.js');
 const { VoiceConnectionStatus, entersState, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
 const path = require('path');
@@ -79,6 +79,48 @@ const splitMessage = (message, maxLength = 2000) => {
     return messageChunks;
 };
 
+
+// Shuffle the music queue
+const shuffleQueue = () => {
+    for (let i = musicQueue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [musicQueue[i], musicQueue[j]] = [musicQueue[j], musicQueue[i]];
+    }
+    currentSongIndex = 0; // Reset the index to 0 after shuffling
+    playNext();
+};
+
+// Create the message action row with buttons
+const createMusicButtons = () => {
+    return new MessageActionRow()
+        .addComponents(
+            new MessageButton()
+                .setCustomId('previous')
+                .setLabel('Previous')
+                .setStyle('PRIMARY'),
+            new MessageButton()
+                .setCustomId('next')
+                .setLabel('Next')
+                .setStyle('PRIMARY'),
+            new MessageButton()
+                .setCustomId('pause')
+                .setLabel('Pause/Resume')
+                .setStyle('SECONDARY'),
+            new MessageButton()
+                .setCustomId('shuffle')
+                .setLabel('Shuffle')
+                .setStyle('SECONDARY'),
+            new MessageButton()
+                .setCustomId('loop')
+                .setLabel('Loop')
+                .setStyle('SECONDARY')
+        );
+};
+
+
+
+
+
 // Command handler for bot commands
 client.on('messageCreate', async (message) => {
     if (!message.content.startsWith('$') || message.author.bot) return;
@@ -154,6 +196,14 @@ client.on('messageCreate', async (message) => {
         textChannel.send('Playback paused.');
     }
 
+ // Show the player controls
+    if (command === 'controls') {
+        const controlMessage = await message.reply({
+            content: 'Use the buttons below to control the music!',
+            components: [createMusicButtons()],
+        });
+    }
+    
     // Resume playback
     if (command === 'resume') {
         if (!currentPlayer || !isPaused) {
@@ -208,6 +258,54 @@ client.on('messageCreate', async (message) => {
         textChannel.send(helpMessage);
     }
 });
+
+
+
+
+
+
+
+
+// Handle button interactions
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
+
+    if (interaction.customId === 'next') {
+        currentSongIndex = (currentSongIndex + 1) % musicQueue.length;
+        playNext();
+        await interaction.update({ content: `Now playing: ${path.basename(musicQueue[currentSongIndex])}`, components: [createMusicButtons()] });
+    } else if (interaction.customId === 'previous') {
+        currentSongIndex = (currentSongIndex - 1 + musicQueue.length) % musicQueue.length;
+        playNext();
+        await interaction.update({ content: `Now playing: ${path.basename(musicQueue[currentSongIndex])}`, components: [createMusicButtons()] });
+    } else if (interaction.customId === 'pause') {
+        if (isPaused) {
+            currentPlayer.unpause();
+            isPaused = false;
+            await interaction.update({ content: `Resumed playing: ${path.basename(musicQueue[currentSongIndex])}`, components: [createMusicButtons()] });
+        } else {
+            currentPlayer.pause();
+            isPaused = true;
+            await interaction.update({ content: 'Playback paused.', components: [createMusicButtons()] });
+        }
+    } else if (interaction.customId === 'shuffle') {
+        isShuffling = !isShuffling;
+        if (isShuffling) {
+            shuffleQueue();
+            await interaction.update({ content: 'Queue shuffled!', components: [createMusicButtons()] });
+        } else {
+            await interaction.update({ content: 'Shuffle disabled.', components: [createMusicButtons()] });
+        }
+    } else if (interaction.customId === 'loop') {
+        isLooping = !isLooping;
+        await interaction.update({ content: isLooping ? 'Looping enabled.' : 'Looping disabled.', components: [createMusicButtons()] });
+    }
+});
+
+
+
+
+
 
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
