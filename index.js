@@ -208,13 +208,13 @@ client.on('messageCreate', async (message) => {
     }
 
  // Show the player controls
-    if (command === 'controls') {
+    /*if (command === 'controls') {
         const controlMessage = await message.reply({
             content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
             components: [createMusicButtons()],
         });
     }
-    
+    */
     // Resume playback
     if (command === 'resume') {
         if (!currentPlayer || !isPaused) {
@@ -233,7 +233,7 @@ client.on('messageCreate', async (message) => {
             return textChannel.send('The queue is empty. Add more songs to play next.');
         }
         playNext();
-        textChannel.send(`Playing the next song in the queue. Now playing: ${path.basename(filePath)}.`);
+        textChannel.send(``);
     }
 
     // Show the number of songs and their names in the music folder
