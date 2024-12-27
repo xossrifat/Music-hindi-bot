@@ -63,9 +63,6 @@ const playNext = () => {
         const textChannel = guild.channels.cache.get(textChannelId);
            const textChannel1 = guild.channels.cache.get(textChannelId);
      if (textChannel1) {
-         if (controlMessage) {
-        controlMessage.delete();
-    }
       const controlMessage = textChannel.send({
             content: `Now playing: ${path.basename(filePath)}`,
             components: [createMusicButtons()],
