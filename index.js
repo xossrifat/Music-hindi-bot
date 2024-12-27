@@ -276,39 +276,69 @@ client.on('messageCreate', async (message) => {
 
 
 
-// Handle button interactions
 client.on('interactionCreate', async (interaction) => {
+    // Ensure the interaction is a button interaction
     if (!interaction.isButton()) return;
 
-    if (interaction.customId === 'next') {
-        currentSongIndex = (currentSongIndex + 1) % musicQueue.length;
-        playNext();
-        await interaction.update({ content: `Now playing: ${path.basename(musicQueue[currentSongIndex])}`, components: [createMusicButtons()] });
-    } else if (interaction.customId === 'previous') {
-        currentSongIndex = (currentSongIndex - 1 + musicQueue.length) % musicQueue.length;
-        playNext();
-        await interaction.update({ content: `Now playing: ${path.basename(musicQueue[currentSongIndex])}`, components: [createMusicButtons()] });
-    } else if (interaction.customId === 'pause') {
-        if (isPaused) {
-            currentPlayer.unpause();
-            isPaused = false;
-            await interaction.update({ content: `Resumed playing: ${path.basename(musicQueue[currentSongIndex])}`, components: [createMusicButtons()] });
-        } else {
-            currentPlayer.pause();
-            isPaused = true;
-            await interaction.update({ content: 'Playback paused.', components: [createMusicButtons()] });
+    // We need to check if the interaction is still valid and hasn't expired
+    try {
+        if (interaction.customId === 'next') {
+            currentSongIndex = (currentSongIndex + 1) % musicQueue.length;
+            playNext();
+            await interaction.update({
+                content: `Now playing: ${path.basename(musicQueue[currentSongIndex])}`,
+                components: [createMusicButtons()],
+            });
+        } else if (interaction.customId === 'previous') {
+            currentSongIndex = (currentSongIndex - 1 + musicQueue.length) % musicQueue.length;
+            playNext();
+            await interaction.update({
+                content: `Now playing: ${path.basename(musicQueue[currentSongIndex])}`,
+                components: [createMusicButtons()],
+            });
+        } else if (interaction.customId === 'pause') {
+            if (isPaused) {
+                currentPlayer.unpause();
+                isPaused = false;
+                await interaction.update({
+                    content: `Resumed playing: ${path.basename(musicQueue[currentSongIndex])}`,
+                    components: [createMusicButtons()],
+                });
+            } else {
+                currentPlayer.pause();
+                isPaused = true;
+                await interaction.update({
+                    content: 'Playback paused.',
+                    components: [createMusicButtons()],
+                });
+            }
+        } else if (interaction.customId === 'shuffle') {
+            isShuffling = !isShuffling;
+            if (isShuffling) {
+                shuffleQueue();
+                await interaction.update({
+                    content: 'Queue shuffled!',
+                    components: [createMusicButtons()],
+                });
+            } else {
+                await interaction.update({
+                    content: 'Shuffle disabled.',
+                    components: [createMusicButtons()],
+                });
+            }
+        } else if (interaction.customId === 'loop') {
+            isLooping = !isLooping;
+            await interaction.update({
+                content: isLooping ? 'Looping enabled.' : 'Looping disabled.',
+                components: [createMusicButtons()],
+            });
         }
-    } else if (interaction.customId === 'shuffle') {
-        isShuffling = !isShuffling;
-        if (isShuffling) {
-            shuffleQueue();
-            await interaction.update({ content: 'Queue shuffled!', components: [createMusicButtons()] });
-        } else {
-            await interaction.update({ content: 'Shuffle disabled.', components: [createMusicButtons()] });
+    } catch (error) {
+        console.error('Error responding to interaction:', error);
+        if (error.code === 10062) {
+            // Interaction has expired or is invalid, maybe log or handle it gracefully
+            console.log('Interaction expired or invalid');
         }
-    } else if (interaction.customId === 'loop') {
-        isLooping = !isLooping;
-        await interaction.update({ content: isLooping ? 'Looping enabled.' : 'Looping disabled.', components: [createMusicButtons()] });
     }
 });
 
