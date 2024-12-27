@@ -88,6 +88,26 @@ const updateControlMessage = async () => {
     }
 };
 
+
+
+// Function to handle control command
+const handleControlCommand = async (textChannel) => {
+    if (controlMessage) {
+        try {
+            await controlMessage.delete();
+        } catch (error) {
+            console.error('Failed to delete old control message:', error);
+        }
+        controlMessage = null;
+    }
+
+    const nowPlaying = musicQueue[currentSongIndex] ? `Now playing: ${path.basename(musicQueue[currentSongIndex])}` : 'No music is currently playing.';
+
+    controlMessage = await textChannel.send({
+        content: nowPlaying,
+        components: [createMusicButtons()],
+    });
+};
 // Shuffle the music queue
 const shuffleQueue = () => {
     for (let i = musicQueue.length - 1; i > 0; i--) {
@@ -177,6 +197,7 @@ client.on('messageCreate', async (message) => {
 
                 playNext();
             }
+            await handleControlCommand(textChannel);
             textChannel.send(`Now playing: ${musicFiles[songIndex]}`);
         } else if (!input) {
             if (!currentPlayer || !currentConnection) return textChannel.send('No music is currently playing.');
@@ -241,17 +262,15 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // Help command
+   // Help command
     if (command === 'help') {
-        let helpMessage = `Here are the available commands:\n`;
-        helpMessage += `- \`$play <number>\`: Play a specific song by its number in the \`$list\`.\n`;
-        helpMessage += `- \`$pause\`: Pause the current song.\n`;
-        helpMessage += `- \`$resume\`: Resume playback if paused.\n`;
-        helpMessage += `- \`$next\`: Skip to the next song.\n`;
-        helpMessage += `- \`$list\`: List all available songs in the \`Music\` folder.\n`;
-        helpMessage += `- \`$shuffle\`: Shuffle the music queue.\n`;
-        helpMessage += `- \`$loop\`: Toggle looping of the current song.\n`;
-        message.channel.send(helpMessage);
+        textChannel.send(`Available commands:\n` +
+            `\`$play [number]\` - Play a specific song by its number or resume playback.\n` +
+            `\`$pause\` - Pause the current playback.\n` +
+            `\`$resume\` - Resume playback.\n` +
+            `\`$next\` - Skip to the next song.\n` +
+            `\`$list\` - List all songs in the Music folder.\n` +
+            `\`$control\` - Reset and create a new control message.\n`);
     }
 
     // Shuffle command
@@ -263,6 +282,11 @@ client.on('messageCreate', async (message) => {
         textChannel.send('The queue has been shuffled.');
     }
 
+ // Control command
+    if (command === 'control') {
+        await handleControlCommand(textChannel);
+    }
+    
     // Loop command
     if (command === 'loop') {
         isLooping = !isLooping;
