@@ -340,7 +340,7 @@ client.once('ready', async () => {
         return;
     }
 
-
+  
     const filePath = musicQueue.shift();
     const resource = createAudioResource(fs.createReadStream(filePath));
   // Get the text channel ID from the environment variable
@@ -353,7 +353,7 @@ client.once('ready', async () => {
            const textChannel1 = guild.channels.cache.get(textChannelId2);
      if (textChannel1) {
       const controlMessage = textChannel.send({
-            content: `Now playing: ${path.basename(filePath)}`,
+            content: `Now playing: ${filePath}`,
             components: [createMusicButtons()],
         });
      
