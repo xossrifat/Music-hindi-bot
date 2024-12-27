@@ -101,7 +101,7 @@ const shuffleQueue = () => {
 
 // Create the message action row with buttons
 const createMusicButtons = () => {
-    return new ActionRowBuilder()
+    const row1 = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('previous')
@@ -123,11 +123,17 @@ const createMusicButtons = () => {
                 .setCustomId('loop')
                 .setLabel('Loop')
                 .setStyle(ButtonStyle.Secondary),
+        );
+
+    const row2 = new ActionRowBuilder()
+        .addComponents(
             new ButtonBuilder()
                 .setCustomId('mute')
                 .setLabel('Mute/Unmute')
-                .setStyle(ButtonStyle.Danger)
+                .setStyle(ButtonStyle.Danger),
         );
+
+    return [row1, row2];
 };
 
 // Command handler for bot commands
@@ -153,13 +159,15 @@ client.on('messageCreate', async (message) => {
 
     // Play specific song or resume if no song is specified
     if (command === 'play') {
-        const fileName = args.join(' '); // Get the file name or specific song
         const musicFolderPath = path.join(__dirname, 'Music');
-        const filePath = path.join(musicFolderPath, fileName);
+        const musicFiles = fs.readdirSync(musicFolderPath).filter(file => file.endsWith('.mp3'));
 
-        if (fileName && fs.existsSync(filePath)) {
-            musicQueue = [filePath]; // Replace the queue with the specific song
-            currentSongIndex = 0;
+        const input = args[0];
+        const songIndex = parseInt(input, 10) - 1;
+
+        if (!isNaN(songIndex) && songIndex >= 0 && songIndex < musicFiles.length) {
+            currentSongIndex = songIndex;
+            musicQueue = musicFiles.map(file => path.join(musicFolderPath, file));
             if (currentPlayer && currentConnection) {
                 playNext();
             } else {
@@ -180,8 +188,8 @@ client.on('messageCreate', async (message) => {
 
                 playNext();
             }
-            textChannel.send(`Now playing: ${fileName}`);
-        } else if (!fileName) {
+            textChannel.send(`Now playing: ${musicFiles[songIndex]}`);
+        } else if (!input) {
             if (!currentPlayer || !currentConnection) return textChannel.send('No music is currently playing.');
             if (isPaused) {
                 currentPlayer.unpause();
@@ -191,7 +199,7 @@ client.on('messageCreate', async (message) => {
                 textChannel.send('Playback is already running.');
             }
         } else {
-            textChannel.send(`The file "${fileName}" does not exist in the music folder.`);
+            textChannel.send(`Invalid song number or input. Use \`$list\` to see available songs.`);
         }
     }
 
@@ -247,7 +255,7 @@ client.on('messageCreate', async (message) => {
     // Help command
     if (command === 'help') {
         const helpMessage = `**Available Commands:**
-        - \`$play <song>\` - Play a specific song.
+        - \`$play <song_number_or_name>\` - Play a specific song by number or name.
         - \`$pause\` - Pause the current song.
         - \`$resume\` - Resume the paused song.
         - \`$next\` - Skip to the next song.
