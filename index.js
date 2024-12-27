@@ -61,6 +61,7 @@ const playNext = () => {
 };
 
 // Function to update the control message
+// Function to update the control message
 const updateControlMessage = async () => {
     const textChannelId = process.env.TEXT_CHANNEL_ID;
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
@@ -71,20 +72,21 @@ const updateControlMessage = async () => {
 
     const nowPlaying = musicQueue[currentSongIndex] ? `Now playing: ${path.basename(musicQueue[currentSongIndex])}` : 'No music is currently playing.';
 
-    if (controlMessage) {
-        try {
+    try {
+        if (controlMessage) {
             await controlMessage.edit({
                 content: nowPlaying,
                 components: [createMusicButtons()],
             });
-        } catch (error) {
-            console.error('Failed to update control message:', error);
+        } else {
+            controlMessage = await textChannel.send({
+                content: nowPlaying,
+                components: [createMusicButtons()],
+            });
         }
-    } else {
-        controlMessage = await textChannel.send({
-            content: nowPlaying,
-            components: [createMusicButtons()],
-        });
+    } catch (error) {
+        console.error('Failed to update control message:', error);
+        controlMessage = null; // Reset if the message no longer exists
     }
 };
 
@@ -103,10 +105,14 @@ const handleControlCommand = async (textChannel) => {
 
     const nowPlaying = musicQueue[currentSongIndex] ? `Now playing: ${path.basename(musicQueue[currentSongIndex])}` : 'No music is currently playing.';
 
-    controlMessage = await textChannel.send({
-        content: nowPlaying,
-        components: [createMusicButtons()],
-    });
+    try {
+        controlMessage = await textChannel.send({
+            content: nowPlaying,
+            components: [createMusicButtons()],
+        });
+    } catch (error) {
+        console.error('Failed to send new control message:', error);
+    }
 };
 // Shuffle the music queue
 const shuffleQueue = () => {
@@ -198,7 +204,7 @@ client.on('messageCreate', async (message) => {
                 playNext();
             }
             await handleControlCommand(textChannel);
-            textChannel.send(`Now playing: ${musicFiles[songIndex]}`);
+          //  textChannel.send(`Now playing: ${musicFiles[songIndex]}`);
         } else if (!input) {
             if (!currentPlayer || !currentConnection) return textChannel.send('No music is currently playing.');
             if (isPaused) {
