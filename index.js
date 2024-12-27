@@ -342,7 +342,6 @@ client.once('ready', async () => {
 
   
     const filePath = musicQueue.shift();
-    const resource = createAudioResource(fs.createReadStream(filePath));
   // Get the text channel ID from the environment variable
     const textChannelId2 = process.env.TEXT_CHANNEL_ID;
     const guild2 = client.guilds.cache.get(process.env.GUILD_ID);
