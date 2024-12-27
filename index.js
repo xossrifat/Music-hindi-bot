@@ -151,6 +151,49 @@ const createMusicButtons = () => {
         );
 };
 
+// setup
+const setupVoiceConnection = (channelId, guildId, adapterCreator) => {
+    try {
+        const connection = joinVoiceChannel({
+            channelId,
+            guildId,
+            adapterCreator,
+        });
+
+        connection.on(VoiceConnectionStatus.Disconnected, async () => {
+            console.warn('Disconnected from the voice channel.');
+            try {
+                await Promise.race([
+                    entersState(connection, VoiceConnectionStatus.Signalling, 5000),
+                    entersState(connection, VoiceConnectionStatus.Connecting, 5000),
+                ]);
+                console.log('Successfully reconnected.');
+            } catch {
+                console.error('Reconnection failed. Destroying connection.');
+                connection.destroy();
+            }
+        });
+
+        connection.on(VoiceConnectionStatus.Destroyed, () => {
+            console.log('Connection destroyed.');
+        });
+
+        connection.on('error', (error) => {
+            console.error('Voice connection error:', error);
+        });
+
+        return connection;
+    } catch (error) {
+        console.error('Error setting up voice connection:', error);
+        return null;
+    }
+};
+
+
+
+
+
+
 // Command handler for bot commands
 client.on('messageCreate', async (message) => {
     if (!message.content.startsWith('$') || message.author.bot) return;
@@ -192,11 +235,7 @@ client.on('messageCreate', async (message) => {
 
                 if (!guild) return message.reply('Guild not found.');
 
-                currentConnection = joinVoiceChannel({
-                    channelId,
-                    guildId,
-                    adapterCreator: guild.voiceAdapterCreator,
-                });
+                currentConnection = setupVoiceConnection(channelId, guildId, guild.voiceAdapterCreator);
 
                 currentPlayer = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play } });
                 currentConnection.subscribe(currentPlayer);
@@ -381,11 +420,7 @@ client.once('ready', async () => {
     }
 
     // Join the voice channel and start playing music
-    currentConnection = joinVoiceChannel({
-        channelId,
-        guildId,
-        adapterCreator: guild.voiceAdapterCreator,
-    });
+    currentConnection = setupVoiceConnection(channelId, guildId, guild.voiceAdapterCreator);
 
     currentPlayer = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play } });
     currentConnection.subscribe(currentPlayer);
