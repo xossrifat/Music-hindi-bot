@@ -58,9 +58,6 @@ const playNext = () => {
     const textChannelId = process.env.TEXT_CHANNEL_ID;
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
  // Delete the previous control message if it exists
-    if (controlMessage) {
-       const controlMessage.delete();
-    }
     if (guild) {
         // Fetch the specific text channel by ID
         const textChannel = guild.channels.cache.get(textChannelId);
@@ -71,9 +68,10 @@ const playNext = () => {
             components: [createMusicButtons()],
         });
      }
-        if (textChannel) {
-            textChannel.send(``);
-        } else {
+        if (textChannel1) {
+        controlMessage.delete();
+    }
+         else {
             console.error("Text channel not found.");
         }
     }
