@@ -54,25 +54,7 @@ const playNext = () => {
         console.error('Error playing audio:', error);
     });
 
-    // Get the text channel ID from the environment variable
-    const textChannelId = process.env.TEXT_CHANNEL_ID;
-    const guild = client.guilds.cache.get(process.env.GUILD_ID);
- // Delete the previous control message if it exists
-    if (guild) {
-        // Fetch the specific text channel by ID
-        const textChannel = guild.channels.cache.get(textChannelId);
-           const textChannel1 = guild.channels.cache.get(textChannelId);
-     if (textChannel1) {
-      const controlMessage = textChannel.send({
-            content: `Now playing: ${path.basename(filePath)}`,
-            components: [createMusicButtons()],
-        });
-     
-     }
-         else {
-            console.error("Text channel not found.");
-        }
-    }
+  
 };
 
 // Function to split the list of songs into chunks of 2000 characters or fewer
@@ -358,6 +340,27 @@ client.once('ready', async () => {
         return;
     }
 
+  // Get the text channel ID from the environment variable
+    const textChannelId2 = process.env.TEXT_CHANNEL_ID;
+    const guild2 = client.guilds.cache.get(process.env.GUILD_ID);
+ // Delete the previous control message if it exists
+    if (guild2) {
+        // Fetch the specific text channel by ID
+        const textChannel = guild.channels.cache.get(textChannelId2);
+           const textChannel1 = guild.channels.cache.get(textChannelId2);
+     if (textChannel1) {
+      const controlMessage = textChannel.send({
+            content: `Now playing: ${path.basename(filePath)}`,
+            components: [createMusicButtons()],
+        });
+     
+     }
+         else {
+            console.error("Text channel not found.");
+        }
+    }
+
+    
     // Join the voice channel and start playing music
     currentConnection = joinVoiceChannel({
         channelId,
