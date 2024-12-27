@@ -1,4 +1,3 @@
-
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { VoiceConnectionStatus, entersState, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
@@ -24,6 +23,7 @@ let isPaused = false;
 let isLooping = false;
 let isShuffling = false;
 let controlMessage = null;
+let isMuted = false;
 
 // Helper function to load music files from the music folder
 const loadMusicQueue = () => {
@@ -36,41 +36,58 @@ const loadMusicQueue = () => {
 const playNext = () => {
     if (!currentConnection || musicQueue.length === 0) return;
 
-    const filePath = musicQueue.shift();
+    const filePath = musicQueue[currentSongIndex];
     const resource = createAudioResource(fs.createReadStream(filePath));
 
     currentPlayer.play(resource);
 
     currentPlayer.on(AudioPlayerStatus.Idle, () => {
-        if (musicQueue.length > 0) {
+        if (isLooping) {
+            playNext();
+        } else if (musicQueue.length > 0) {
+            currentSongIndex = (currentSongIndex + 1) % musicQueue.length;
             playNext();
         } else {
             console.log('Queue is empty, stopping playback.');
-            currentConnection.destroy();  // Disconnect from the channel when queue is empty
+            currentConnection.destroy(); // Disconnect from the channel when queue is empty
         }
+        updateControlMessage();
     });
 
     currentPlayer.on('error', (error) => {
         console.error('Error playing audio:', error);
     });
 
-  
+    updateControlMessage();
 };
 
-// Function to split the list of songs into chunks of 2000 characters or fewer
-const splitMessage = (message, maxLength = 2000) => {
-    const messageChunks = [];
-    while (message.length > maxLength) {
-        let chunk = message.slice(0, maxLength);
-        let lastIndex = chunk.lastIndexOf("\n"); // Split at the last newline to avoid cutting a song name
-        if (lastIndex === -1) lastIndex = chunk.length; // If no newline, cut at max length
-        messageChunks.push(chunk.slice(0, lastIndex));
-        message = message.slice(lastIndex);
+// Function to update the control message
+const updateControlMessage = async () => {
+    const textChannelId = process.env.TEXT_CHANNEL_ID;
+    const guild = client.guilds.cache.get(process.env.GUILD_ID);
+    if (!guild) return;
+
+    const textChannel = guild.channels.cache.get(textChannelId);
+    if (!textChannel) return;
+
+    const nowPlaying = musicQueue[currentSongIndex] ? `Now playing: ${path.basename(musicQueue[currentSongIndex])}` : 'No music is currently playing.';
+
+    if (controlMessage) {
+        try {
+            await controlMessage.edit({
+                content: nowPlaying,
+                components: [createMusicButtons()],
+            });
+        } catch (error) {
+            console.error('Failed to update control message:', error);
+        }
+    } else {
+        controlMessage = await textChannel.send({
+            content: nowPlaying,
+            components: [createMusicButtons()],
+        });
     }
-    messageChunks.push(message); // Add the remaining part
-    return messageChunks;
 };
-
 
 // Shuffle the music queue
 const shuffleQueue = () => {
@@ -82,7 +99,6 @@ const shuffleQueue = () => {
     playNext();
 };
 
-// Create the message action row with buttons
 // Create the message action row with buttons
 const createMusicButtons = () => {
     return new ActionRowBuilder()
@@ -106,13 +122,13 @@ const createMusicButtons = () => {
             new ButtonBuilder()
                 .setCustomId('loop')
                 .setLabel('Loop')
-                .setStyle(ButtonStyle.Secondary)
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('mute')
+                .setLabel('Mute/Unmute')
+                .setStyle(ButtonStyle.Danger)
         );
 };
-
-
-
-
 
 // Command handler for bot commands
 client.on('messageCreate', async (message) => {
@@ -124,14 +140,13 @@ client.on('messageCreate', async (message) => {
     // Get the text channel ID from the environment variable
     const textChannelId = process.env.TEXT_CHANNEL_ID;
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
-    
+
     if (!guild) {
         return message.reply('Guild not found.');
     }
 
-    // Fetch the specific text channel by ID
     const textChannel = guild.channels.cache.get(textChannelId);
-    
+
     if (!textChannel) {
         return message.reply('Text channel not found.');
     }
@@ -144,6 +159,7 @@ client.on('messageCreate', async (message) => {
 
         if (fileName && fs.existsSync(filePath)) {
             musicQueue = [filePath]; // Replace the queue with the specific song
+            currentSongIndex = 0;
             if (currentPlayer && currentConnection) {
                 playNext();
             } else {
@@ -189,14 +205,6 @@ client.on('messageCreate', async (message) => {
         textChannel.send('Playback paused.');
     }
 
- // Show the player controls
-    /*if (command === 'controls') {
-        const controlMessage = await message.reply({
-            content: 'Bot has joined the voice channel. Use the controls below to manage the music playback.',
-            components: [createMusicButtons()],
-        });
-    }
-    */
     // Resume playback
     if (command === 'resume') {
         if (!currentPlayer || !isPaused) {
@@ -209,21 +217,19 @@ client.on('messageCreate', async (message) => {
 
     // Skip to next song
     if (command === 'next') {
-       const filePath = musicQueue.shift();
-       const resource = createAudioResource(fs.createReadStream(filePath));
         if (musicQueue.length === 0) {
             return textChannel.send('The queue is empty. Add more songs to play next.');
         }
+        currentSongIndex = (currentSongIndex + 1) % musicQueue.length;
         playNext();
-        textChannel.send(``);
+        textChannel.send(`Now playing: ${path.basename(musicQueue[currentSongIndex])}`);
     }
 
-    // Show the number of songs and their names in the music folder
     // List songs in the Music folder
     if (command === 'list') {
         const musicFolderPath = path.join(__dirname, 'Music');
         const musicFiles = fs.readdirSync(musicFolderPath).filter(file => file.endsWith('.mp3'));
-        
+
         let songList = '';
         musicFiles.forEach((file, index) => {
             songList += `${index + 1}. ${file}\n`;
@@ -231,10 +237,10 @@ client.on('messageCreate', async (message) => {
 
         // Split the message if it's too long
         const chunks = splitMessage(songList);
-        
+
         // Send each chunk as a separate message
         for (let chunk of chunks) {
-            await message.channel.send(chunk);
+            await textChannel.send(chunk);
         }
     }
 
@@ -252,17 +258,9 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-
-
-
-
-
-
 client.on('interactionCreate', async (interaction) => {
-    // Ensure the interaction is a button interaction
     if (!interaction.isButton()) return;
 
-    // We need to check if the interaction is still valid and hasn't expired
     try {
         if (interaction.customId === 'next') {
             currentSongIndex = (currentSongIndex + 1) % musicQueue.length;
@@ -314,20 +312,26 @@ client.on('interactionCreate', async (interaction) => {
                 content: isLooping ? 'Looping enabled.' : 'Looping disabled.',
                 components: [createMusicButtons()],
             });
+        } else if (interaction.customId === 'mute') {
+            isMuted = !isMuted;
+            if (isMuted) {
+                currentPlayer.pause();
+                await interaction.update({
+                    content: 'Bot muted.',
+                    components: [createMusicButtons()],
+                });
+            } else {
+                currentPlayer.unpause();
+                await interaction.update({
+                    content: 'Bot unmuted.',
+                    components: [createMusicButtons()],
+                });
+            }
         }
     } catch (error) {
         console.error('Error responding to interaction:', error);
-        if (error.code === 10062) {
-            // Interaction has expired or is invalid, maybe log or handle it gracefully
-            console.log('Interaction expired or invalid');
-        }
     }
 });
-
-
-
-
-
 
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -340,29 +344,6 @@ client.once('ready', async () => {
         return;
     }
 
-  
-    const filePath = musicQueue.shift();
-  // Get the text channel ID from the environment variable
-    const textChannelId2 = process.env.TEXT_CHANNEL_ID;
-    const guild2 = client.guilds.cache.get(process.env.GUILD_ID);
- // Delete the previous control message if it exists
-    if (guild2) {
-        // Fetch the specific text channel by ID
-        const textChannel = guild.channels.cache.get(textChannelId2);
-           const textChannel1 = guild.channels.cache.get(textChannelId2);
-     if (textChannel1) {
-      const controlMessage = textChannel.send({
-            content: `Now playing: ${filePath}`,
-            components: [createMusicButtons()],
-        });
-     
-     }
-         else {
-            console.error("Text channel not found.");
-        }
-    }
-
-    
     // Join the voice channel and start playing music
     currentConnection = joinVoiceChannel({
         channelId,
@@ -373,10 +354,6 @@ client.once('ready', async () => {
     currentPlayer = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play } });
     currentConnection.subscribe(currentPlayer);
 
-    
-   
-
-      
     // Load initial queue and start playback
     musicQueue = loadMusicQueue();
     playNext();
