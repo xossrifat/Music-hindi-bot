@@ -23,7 +23,6 @@ let isPaused = false;
 let isLooping = false;
 let isShuffling = false;
 let controlMessage = null;
-let isMuted = false;
 
 // Helper function to load music files from the music folder
 const loadMusicQueue = () => {
@@ -101,7 +100,7 @@ const shuffleQueue = () => {
 
 // Create the message action row with buttons
 const createMusicButtons = () => {
-    const row1 = new ActionRowBuilder()
+    return new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('previous')
@@ -122,18 +121,8 @@ const createMusicButtons = () => {
             new ButtonBuilder()
                 .setCustomId('loop')
                 .setLabel('Loop')
-                .setStyle(ButtonStyle.Secondary),
+                .setStyle(ButtonStyle.Secondary)
         );
-
-    const row2 = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('mute')
-                .setLabel('Mute/Unmute')
-                .setStyle(ButtonStyle.Danger),
-        );
-
-    return [row1, row2];
 };
 
 // Command handler for bot commands
@@ -254,17 +243,41 @@ client.on('messageCreate', async (message) => {
 
     // Help command
     if (command === 'help') {
-        const helpMessage = `**Available Commands:**
-        - \`$play <song_number_or_name>\` - Play a specific song by number or name.
-        - \`$pause\` - Pause the current song.
-        - \`$resume\` - Resume the paused song.
-        - \`$next\` - Skip to the next song.
-        - \`$list\` - List all songs in the music folder.
-        - \`$help\` - Show this help message.`;
+        let helpMessage = `Here are the available commands:\n`;
+        helpMessage += `- \`$play <number>\`: Play a specific song by its number in the \`$list\`.\n`;
+        helpMessage += `- \`$pause\`: Pause the current song.\n`;
+        helpMessage += `- \`$resume\`: Resume playback if paused.\n`;
+        helpMessage += `- \`$next\`: Skip to the next song.\n`;
+        helpMessage += `- \`$list\`: List all available songs in the \`Music\` folder.\n`;
+        helpMessage += `- \`$shuffle\`: Shuffle the music queue.\n`;
+        helpMessage += `- \`$loop\`: Toggle looping of the current song.\n`;
+        message.channel.send(helpMessage);
+    }
 
-        textChannel.send(helpMessage);
+    // Shuffle command
+    if (command === 'shuffle') {
+        if (musicQueue.length === 0) {
+            return textChannel.send('The queue is empty. Add more songs to shuffle.');
+        }
+        shuffleQueue();
+        textChannel.send('The queue has been shuffled.');
+    }
+
+    // Loop command
+    if (command === 'loop') {
+        isLooping = !isLooping;
+        textChannel.send(`Looping is now ${isLooping ? 'enabled' : 'disabled'}.`);
     }
 });
+
+// Split message into chunks
+const splitMessage = (message, maxLength = 2000) => {
+    const chunks = [];
+    for (let i = 0; i < message.length; i += maxLength) {
+        chunks.push(message.slice(i, i + maxLength));
+    }
+    return chunks;
+};
 
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
@@ -320,22 +333,7 @@ client.on('interactionCreate', async (interaction) => {
                 content: isLooping ? 'Looping enabled.' : 'Looping disabled.',
                 components: [createMusicButtons()],
             });
-        } else if (interaction.customId === 'mute') {
-            isMuted = !isMuted;
-            if (isMuted) {
-                currentPlayer.pause();
-                await interaction.update({
-                    content: 'Bot muted.',
-                    components: [createMusicButtons()],
-                });
-            } else {
-                currentPlayer.unpause();
-                await interaction.update({
-                    content: 'Bot unmuted.',
-                    components: [createMusicButtons()],
-                });
-            }
-        }
+        } 
     } catch (error) {
         console.error('Error responding to interaction:', error);
     }
